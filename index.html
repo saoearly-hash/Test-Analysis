@@ -17,7 +17,7 @@
             padding: 10px;
         }
         .container {
-            max-width: 1250px;
+            max-width: 1400px;
             margin: 0 auto;
             background: #fff;
             padding: 15px;
@@ -96,7 +96,7 @@
         }
         table.score-table th { background: #f2f2f2; }
         
-        /* コメント欄を大きく表示 */
+        /* コメント欄：行数に応じて自動拡張（すべて表示） */
         .comment-container {
             display: flex;
             flex-direction: column;
@@ -122,60 +122,78 @@
         }
         .comment-box textarea {
             width: 100%;
-            height: 75px;
+            min-height: 60px;
+            height: auto;
             padding: 6px;
             font-size: 0.85rem;
             font-family: inherit;
             border: 1px solid #ccc;
             border-radius: 4px;
-            resize: vertical;
+            resize: none; /* 自動拡張するため手動リサイズは無効化 */
+            overflow: hidden; /* スクロールバーを出さない */
             background: #fff;
             box-sizing: border-box;
         }
 
-        /* 縦3×横3配置のグラフグリッド */
+        /* グラフエリアのコントロール群 */
+        .graph-control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .graph-control-bar label {
+            font-size: 0.8rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* 縦3×横3配置のグラフグリッド（動的高さ対応） */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             gap: 6px;
+            height: 480px; /* 初期高さ（スライダーで連動・変更可能） */
+            transition: height 0.1s ease;
         }
         .mini-chart-card {
             background: #fafafa;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
-            padding: 5px;
+            padding: 4px;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
+            height: 100%;
+            box-sizing: border-box;
         }
         .mini-chart-card h4 {
-            font-size: 0.72rem;
-            margin: 0 0 3px 0;
+            font-size: 0.7rem;
+            margin: 0 0 2px 0;
             color: #2c3e50;
         }
-        /* グラフ自体の横幅を制限してスリム化 */
         .chart-wrapper {
             position: relative;
-            height: 75px;
-            width: 70px; /* 横幅を細くスリムに固定 */
+            flex-grow: 1;
+            width: 65px;
             margin: 0 auto;
+            min-height: 40px;
         }
 
-        /* 印刷設定：A4用紙1ページに美しく収める */
+        /* 印刷設定：A4横向き 1ページに収める */
         @media print {
             @page {
-                size: A4 portrait; /* A4縦向き */
+                size: A4 landscape; /* A4横向き */
                 margin: 6mm;
             }
             body { background: #fff; padding: 0; font-size: 10px; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
             .no-print { display: none !important; }
             .report-card { border: 1px solid #999; padding: 8px; margin-top: 0; }
-            .comment-box textarea { border: none; background: transparent; height: auto; resize: none; overflow: visible; }
-            .charts-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; }
-            .mini-chart-card { height: 90px; }
+            .comment-box textarea { border: none; background: transparent; resize: none; overflow: visible; }
+            .charts-grid { gap: 4px; }
         }
     </style>
 </head>
@@ -226,7 +244,7 @@
                 </div>
 
                 <div class="grid-2col">
-                    <!-- 左側：スコア表 ＆ 大きめのコメント欄 -->
+                    <!-- 左側：スコア表 ＆ 自動拡張コメント欄 -->
                     <div>
                         <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📋 種目別スコア詳細 ＆ 次回目標</h3>
                         <table class="score-table">
@@ -245,20 +263,26 @@
                         <div class="comment-container">
                             <div class="comment-box comment-good">
                                 <label for="textGood">👍 良かった点:</label>
-                                <textarea id="textGood"></textarea>
+                                <textarea id="textGood" oninput="autoResizeTextarea(this)"></textarea>
                             </div>
                             <div class="comment-box comment-task">
                                 <label for="textTask">🎯 今後の課題・アドバイス:</label>
-                                <textarea id="textTask"></textarea>
+                                <textarea id="textTask" oninput="autoResizeTextarea(this)"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 右側：縦3×横3のスリムなグラフエリア -->
+                    <!-- 右側：縦3×横3のグラフ（手動高さ調整スライダー付き） -->
                     <div>
-                        <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
+                        <div class="graph-control-bar">
+                            <h3 style="font-size: 0.9rem; margin: 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
+                            <div class="no-print" style="display: flex; align-items: center; gap: 5px;">
+                                <label for="graphHeightRange">グラフ縦幅調整:</label>
+                                <input type="range" id="graphHeightRange" min="300" max="750" value="480" step="10" oninput="updateGraphHeight(this.value)">
+                            </div>
+                        </div>
                         <div class="charts-grid" id="chartsGrid">
-                            <!-- JavaScriptでスリムなグラフを動的生成 -->
+                            <!-- JavaScriptで動的生成 -->
                         </div>
                     </div>
                 </div>
@@ -271,6 +295,20 @@
         let allStudentsData = [];
         let currentSheetName = "";
         let activeCharts = [];
+
+        // テキストエリアの行数に応じて高さを自動拡張する関数
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        // スライダーでグラフエリアの高さを手動調整する関数
+        function updateGraphHeight(val) {
+            const grid = document.getElementById('chartsGrid');
+            if (grid) {
+                grid.style.height = val + 'px';
+            }
+        }
 
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -498,6 +536,11 @@
             document.getElementById('textTask').value = taskPoints.length > 0 
                 ? taskPoints.join(' ') 
                 : `全体的に元気に挑戦できています。日常の遊びや運動の中にさまざまな動きを取り入れることで、さらに身体能力が高まります。`;
+
+            // レポート表示後にコメント欄のテキスト量に合わせて高さを自動フィットさせる
+            setTimeout(() => {
+                document.querySelectorAll('.comment-box textarea').forEach(ta => autoResizeTextarea(ta));
+            }, 50);
 
             reportArea.style.display = 'block';
         }
