@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スポーツテスト分析・レポートシステム</title>
+    <!-- グラフ描画用ライブラリ (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Excelファイル読み込み用ライブラリ (SheetJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 1.5rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .section {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .section h2 { font-size: 1.1rem; margin-top: 0; color: #2980b9; }
+        input[type="file"] { font-size: 0.9rem; }
+        select, button {
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        button.btn-primary { background: #3498db; color: #fff; border: none; font-weight: bold; }
+        button.btn-primary:hover { background: #2980b9; }
+        button.btn-success { background: #2ecc71; color: #fff; border: none; font-weight: bold; }
+        button.btn-success:hover { background: #27ae60; }
+        
+        /* 検索・生徒選択エリア */
+        .selector-area {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* レポート表示エリア */
+        .report-card {
+            background: #fff;
+            border: 2px solid #bdc3c7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .student-info span { margin-right: 20px; font-weight: bold; font-size: 1.05rem; }
+        
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media(max-width: 768px) {
+            .grid-2col { grid-template-columns: 1fr; }
+        }
+
+        table.score-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        table.score-table th, table.score-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        table.score-table th { background: #f2f2f2; }
+        
+        .comment-box {
+            background: #e8f8f5;
+            border-left: 4px solid #1abc9c;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+
+        /* 印刷時（PDF出力用）の調整 */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
+            .no-print { display: none !important; }
+            .report-card { border: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📊 スポーツテスト 記録管理・レポートシステム</h1>
+
+        <!-- ① エクセル一括インポート機能 -->
+        <div class="section no-print">
+            <h2>📁 1. データインポート</h2>
+            <p style="font-size: 0.85rem; color: #666;">お持ちの「忍者ナインスポーツテストシート（マスタシート）」のExcelファイルを読み込んでください。</p>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="importExcel(event)">
+            <span id="importStatus" style="margin-left: 10px; font-weight: bold; color: #27ae60;"></span>
+        </div>
+
+        <!-- ② 生徒選択セクション -->
+        <div class="section no-print" id="selectSection" style="display:none;">
+            <h2>👤 2. 生徒の照会</h2>
+            <div class="selector-area">
+                <label>生徒を選択: 
+                    <select id="studentSelect" onchange="displayStudentReport()">
+                        <option value="">-- 生徒を選んでください --</option>
+                    </select>
+                </label>
+                <button class="btn-success" onclick="window.print()">🖨️ このレポートを印刷 / PDF保存</button>
+            </div>
+        </div>
+
+        <!-- ③ レポート表示 ＆ グラフエリア -->
+        <div id="reportArea" style="display:none;">
+            <div class="report-card">
+                <div class="student-header">
+                    <h2>スポーツテスト測定結果レポート</h2>
+                    <div class="student-info">
+                        <span>氏名: <span id="repName" style="color:#2980b9;"></span></span>
+                        <span>学年: <span id="repGrade"></span></span>
+                        <span>性別: <span id="repGender"></span></span>
+                    </div>
+                </div>
+
+                <div class="grid-2col">
+                    <!-- 左側：記録テーブル -->
+                    <div>
+                        <h3>📋 種目別スコア詳細</h3>
+                        <table class="score-table">
+                            <thead>
+                                <tr>
+                                    <th>測定種目</th>
+                                    <th>前回記録</th>
+                                    <th>今回記録</th>
+                                    <th>伸び・評価</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scoreTableBody">
+                                <!-- 動的に挿入 -->
+                            </tbody>
+                        </table>
+                        <div class="comment-box" id="aiComment">
+                            <!-- 自動評価コメント -->
+                        </div>
+                    </div>
+
+                    <!-- 右側：グラフ表示 -->
+                    <div>
+                        <h3>📈 前回・今回 比較グラフ</h3>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="scoreChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let allStudentsData = [];
+        let myChart = null;
+
+        // エクセル読み込み処理
+        function importExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // 「マスタ」シートを読む
+                const sheetName = workbook.SheetNames.includes('マスタ') ? 'マスタ' : workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                
+                // 2行目（インデックス2）からデータ行が始まる構造を想定
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                allStudentsData = [];
+                
+                // 行の走査（3行目以降、インデックス2〜）
+                for (let i = 2; i < rows.length; i++) {
+                    const row = rows[i];
+                    const name = row[1]; // 氏名
+                    if (!name) continue; // 名前が空の行はスキップ
+
+                    const student = {
+                        name: name,
+                        grade: row[2] || '不明',
+                        gender: row[3] || '不明',
+                        scores: {
+                            'ダイアゴナルラン(秒)': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
+                            'ストラックアウト(点)': { prev: row[6], current: row[7], unit: '点', lowerIsBetter: false },
+                            '立ち幅跳び(㎝)': { prev: row[8], current: row[9], unit: '㎝', lowerIsBetter: false },
+                            '反復横跳び(回)': { prev: row[10], current: row[11], unit: '回', lowerIsBetter: false },
+                            '上体起こし(回)': { prev: row[12], current: row[13], unit: '回', lowerIsBetter: false },
+                            '握力(右/左)': { prev: row[14], current: row[16], unit: 'kg', lowerIsBetter: false }, // 例として右前回/右今回など
+                            '長座体前屈(㎝)': { prev: row[17], current: row[18], unit: '㎝', lowerIsBetter: false },
+                            'ミニシャトルラン(回)': { prev: row[19], current: row[20], unit: '回', lowerIsBetter: false }
+                        }
+                    };
+                    allStudentsData.push(student);
+                }
+
+                // セレクトボックスの選択肢を更新
+                const select = document.getElementById('studentSelect');
+                select.innerHTML = '<option value="">-- 生徒を選んでください --</option>';
+                allStudentsData.forEach((st, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.text = `${st.name} （${st.grade}）`;
+                    select.appendChild(opt);
+                });
+
+                document.getElementById('importStatus').innerText = `✅ ${allStudentsData.length}名分のデータを読み込みました！`;
+                document.getElementById('selectSection').style.display = 'block';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 生徒レポートの表示切り替え
+        function displayStudentReport() {
+            const index = document.getElementById('studentSelect').value;
+            const reportArea = document.getElementById('reportArea');
+            
+            if (index === "") {
+                reportArea.style.display = 'none';
+                return;
+            }
+
+            const student = allStudentsData[index];
+            document.getElementById('repName').innerText = student.name;
+            document.getElementById('repGrade').innerText = student.grade;
+            document.getElementById('repGender').innerText = student.gender;
+
+            const tbody = document.getElementById('scoreTableBody');
+            tbody.innerHTML = '';
+
+            let improvedCount = 0;
+            let totalEvents = 0;
+            const labels = [];
+            const prevData = [];
+            const currData = [];
+
+            for (let [eventKey, data] of Object.entries(student.scores)) {
+                labels.push(eventKey.split('(')[0]);
+                const p = (data.prev !== undefined && data.prev !== null && data.prev !== '') ? Number(data.prev) : '-';
+                const c = (data.current !== undefined && data.current !== null && data.current !== '') ? Number(data.current) : '-';
+                
+                prevData.valueOf()
+                prevData.push(p === '-' ? 0 : p);
+                currData.push(c === '-' ? 0 : c);
+
+                let evalText = '-';
+                if (p !== '-' && c !== '-') {
+                    totalEvents++;
+                    let diff = c - p;
+                    if (data.lowerIsBetter) diff = -diff; // 秒数などはマイナスが良い
+
+                    if (diff > 0) {
+                        evalText = '📈 向上！';
+                        improvedCount++;
+                    } else if (diff < 0) {
+                        evalText = '📉 惜しい';
+                    } else {
+                        evalText = '➡️ 横ばい';
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${eventKey}</b></td>
+                    <td>${p} ${data.unit}</td>
+                    <td><b>${c} ${data.unit}</b></td>
+                    <td>${evalText}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // 自動コメント生成
+            const commentBox = document.getElementById('aiComment');
+            commentBox.innerHTML = `💡 <b>総合コメント:</b> ${student.name}さんは、計測種目のうち ${totalEvents} 種目中 <b>${improvedCount} 種目</b>で前回より記録を伸ばしています！全体的に運動機能の成長が見られます。引き続きバランスよく練習に取り組みましょう。`;
+
+            reportArea.style.display = 'block';
+
+            // グラフ描画
+            drawChart(labels, prevData, currData);
+        }
+
+        // Chart.jsによるグラフ描画
+        function drawChart(labels, prevData, currData) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy(); // 既存のグラフを破棄して再描画
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '前回記録',
+                            data: prevData,
+                            backgroundColor: 'rgba(189, 195, 199, 0.7)',
+                            borderColor: 'rgba(127, 140, 141, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '今回記録',
+                            data: currData,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: 'rgba(41, 128, 185, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
