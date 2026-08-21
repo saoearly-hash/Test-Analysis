@@ -14,29 +14,29 @@
             background-color: #f4f7f6;
             color: #333;
             margin: 0;
-            padding: 15px;
+            padding: 10px;
         }
         .container {
-            max-width: 1150px;
+            max-width: 1200px;
             margin: 0 auto;
             background: #fff;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        h1 { font-size: 1.4rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+        h1 { font-size: 1.3rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 6px; }
         .section {
             background: #f9f9f9;
             border: 1px solid #e0e0e0;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
         }
-        .section h2 { font-size: 1rem; margin-top: 0; color: #2980b9; }
-        input[type="file"] { font-size: 0.9rem; }
+        .section h2 { font-size: 0.95rem; margin-top: 0; color: #2980b9; }
+        input[type="file"] { font-size: 0.85rem; }
         select, button {
-            padding: 6px 10px;
-            font-size: 0.9rem;
+            padding: 5px 8px;
+            font-size: 0.85rem;
             border-radius: 4px;
             border: 1px solid #ccc;
             cursor: pointer;
@@ -46,51 +46,52 @@
         
         .selector-area {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
-            margin-top: 8px;
+            margin-top: 6px;
         }
 
         .report-card {
             background: #fff;
             border: 2px solid #bdc3c7;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
         }
         .student-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #ddd;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
         }
-        .student-header h2 { font-size: 1.2rem; margin: 0; }
-        .student-info span { margin-right: 12px; font-weight: bold; font-size: 0.95rem; }
+        .student-header h2 { font-size: 1.1rem; margin: 0; }
+        .student-info span { margin-right: 10px; font-weight: bold; font-size: 0.9rem; }
         
+        /* 左右2カラム（左：表＆コメント、右：縦4×横2のグラフ） */
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
             align-items: start;
         }
-        @media(max-width: 768px) {
+        @media(max-width: 900px) {
             .grid-2col { grid-template-columns: 1fr; }
         }
 
         table.score-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
         }
         table.score-table th, table.score-table td {
             border: 1px solid #ddd;
-            padding: 4px 6px;
+            padding: 3px 4px;
             text-align: center;
         }
         table.score-table th { background: #f2f2f2; }
@@ -98,31 +99,31 @@
         .comment-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .comment-box {
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
         }
         .comment-good {
             background: #e8f8f5;
-            border-left: 4px solid #1abc9c;
+            border-left: 3px solid #1abc9c;
         }
         .comment-task {
             background: #fef9e7;
-            border-left: 4px solid #f1c40f;
+            border-left: 3px solid #f1c40f;
         }
         .comment-box label {
             display: block;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .comment-box textarea {
             width: 100%;
-            height: 45px;
-            padding: 4px;
-            font-size: 0.85rem;
+            height: 38px;
+            padding: 3px;
+            font-size: 0.8rem;
             font-family: inherit;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -131,38 +132,39 @@
             box-sizing: border-box;
         }
 
-        /* 種目別グラフをコンパクトにまとめるグリッド (4列配置) */
+        /* 縦4×横2配置のグラフグリッド */
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
         }
         .mini-chart-card {
             background: #fafafa;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
-            padding: 4px;
+            padding: 3px;
             text-align: center;
         }
         .mini-chart-card h4 {
-            font-size: 0.75rem;
-            margin: 0 0 2px 0;
+            font-size: 0.7rem;
+            margin: 0 0 1px 0;
             color: #2c3e50;
         }
 
-        /* 印刷設定：全体を1ページに収める */
+        /* 印刷設定：A4用紙1ページに完全に収める */
         @media print {
             @page {
-                size: A4 landscape; /* 横向きA4で1枚に美しく収める場合 */
-                margin: 10mm;
+                size: A4 portrait; /* A4縦向き */
+                margin: 6mm;
             }
-            body { background: #fff; padding: 0; font-size: 11px; }
+            body { background: #fff; padding: 0; font-size: 10px; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
             .no-print { display: none !important; }
-            .report-card { border: 1px solid #999; padding: 10px; margin-top: 0; }
+            .report-card { border: 1px solid #999; padding: 8px; margin-top: 0; }
             .comment-box textarea { border: none; background: transparent; height: auto; overflow: visible; }
-            .charts-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-            .mini-chart-card { height: 95px; }
+            .charts-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); gap: 4px; }
+            .mini-chart-card { height: 75px; }
         }
     </style>
 </head>
@@ -174,7 +176,6 @@
         <!-- ① エクセル一括インポート ＆ シート選択機能 -->
         <div class="section no-print">
             <h2>📁 1. データインポート ＆ シート選択</h2>
-            <p style="font-size: 0.85rem; color: #666;">エクセルファイルを選択後、読み込みたいシートを選択してください。</p>
             <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
             
             <div id="sheetSelectorArea" class="selector-area" style="display:none;">
@@ -184,7 +185,7 @@
                     </select>
                 </label>
             </div>
-            <span id="importStatus" style="display:block; margin-top: 8px; font-weight: bold; color: #27ae60;"></span>
+            <span id="importStatus" style="display:block; margin-top: 5px; font-weight: bold; color: #27ae60; font-size: 0.85rem;"></span>
         </div>
 
         <!-- ② 生徒選択セクション -->
@@ -206,9 +207,9 @@
                 <div class="student-header">
                     <h2>スポーツテスト測定結果レポート</h2>
                     <div class="student-info">
-                        <span>シート名: <span id="repSheetName" style="color:#e67e22;"></span></span>
+                        <span>シート: <span id="repSheetName" style="color:#e67e22;"></span></span>
                         <span>氏名: <span id="repName" style="color:#2980b9;"></span></span>
-                        <span>年齢: <span id="repGrade"></span></span>
+                        <span>年齢/学年: <span id="repGrade"></span></span>
                         <span>性別: <span id="repGender"></span></span>
                     </div>
                 </div>
@@ -216,7 +217,7 @@
                 <div class="grid-2col">
                     <!-- 左側：スコア表 ＆ コメント欄 -->
                     <div>
-                        <h3 style="font-size: 0.95rem; margin: 0 0 5px 0; color:#2c3e50;">📋 種目別スコア詳細 ＆ 次回目標</h3>
+                        <h3 style="font-size: 0.85rem; margin: 0 0 4px 0; color:#2c3e50;">📋 種目別スコア詳細 ＆ 次回目標</h3>
                         <table class="score-table">
                             <thead>
                                 <tr>
@@ -242,9 +243,9 @@
                         </div>
                     </div>
 
-                    <!-- 右側：コンパクトな種目別個別グラフエリア -->
+                    <!-- 右側：縦4×横2のコンパクトな個別グラフエリア -->
                     <div>
-                        <h3 style="font-size: 0.95rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
+                        <h3 style="font-size: 0.85rem; margin: 0 0 4px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
                         <div class="charts-grid" id="chartsGrid">
                             <!-- JavaScriptでコンパクトなグラフを動的生成 -->
                         </div>
@@ -421,7 +422,7 @@
                         if (c >= 5) {
                             goodPoints.push(`狙った的をしっかり見てボールをコントロールする力が優れており、素晴らしい集中力が見られました。`);
                         } else {
-                            taskPoints.push(`ボールを投げる際、狙う場所と体の向きを意識して練習すると、さらに正確に的を射抜けるようになります。`);
+                            taskPoints.push(`ボールを投げる際、狙う場所と体の向きを意識して練習すると、より正確に的を射抜けるようになります。`);
                         }
                     } else if (eventKey === '上体起こし' || eventKey === '握力' || eventKey === '長座体前屈') {
                         if (p !== null && c >= p) {
@@ -447,7 +448,7 @@
                 cardDiv.className = 'mini-chart-card';
                 cardDiv.innerHTML = `
                     <h4>${eventKey} (${data.unit})</h4>
-                    <div style="position: relative; height: 75px; width: 100%;">
+                    <div style="position: relative; height: 52px; width: 100%;">
                         <canvas id="${canvasId}"></canvas>
                     </div>
                 `;
@@ -470,8 +471,8 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: { 
-                            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
-                            x: { ticks: { font: { size: 9 } } }
+                            y: { beginAtZero: true, ticks: { font: { size: 8 } } },
+                            x: { ticks: { font: { size: 8 } } }
                         }
                     }
                 });
