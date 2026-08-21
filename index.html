@@ -41,20 +41,17 @@
             border: 1px solid #ccc;
             cursor: pointer;
         }
-        button.btn-primary { background: #3498db; color: #fff; border: none; font-weight: bold; }
-        button.btn-primary:hover { background: #2980b9; }
         button.btn-success { background: #2ecc71; color: #fff; border: none; font-weight: bold; }
         button.btn-success:hover { background: #27ae60; }
         
-        /* 検索・生徒選択エリア */
         .selector-area {
             display: flex;
             gap: 15px;
             align-items: center;
             flex-wrap: wrap;
+            margin-top: 10px;
         }
 
-        /* レポート表示エリア */
         .report-card {
             background: #fff;
             border: 2px solid #bdc3c7;
@@ -101,7 +98,6 @@
             font-size: 0.95rem;
         }
 
-        /* 印刷時（PDF出力用）の調整 */
         @media print {
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
@@ -115,12 +111,20 @@
     <div class="container">
         <h1>📊 スポーツテスト 記録管理・レポートシステム</h1>
 
-        <!-- ① エクセル一括インポート機能 -->
+        <!-- ① エクセル一括インポート ＆ シート選択機能 -->
         <div class="section no-print">
-            <h2>📁 1. データインポート</h2>
-            <p style="font-size: 0.85rem; color: #666;">お持ちの「忍者ナインスポーツテストシート（マスタシート）」のExcelファイルを読み込んでください。</p>
-            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="importExcel(event)">
-            <span id="importStatus" style="margin-left: 10px; font-weight: bold; color: #27ae60;"></span>
+            <h2>📁 1. データインポート ＆ シート選択</h2>
+            <p style="font-size: 0.85rem; color: #666;">エクセルファイルを選択後、読み込みたいシート（ページ）を選択してください。</p>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
+            
+            <div id="sheetSelectorArea" class="selector-area" style="display:none;">
+                <label>読み込むシート: 
+                    <select id="sheetSelect" onchange="loadSelectedSheet()">
+                        <option value="">-- シートを選択してください --</option>
+                    </select>
+                </label>
+            </div>
+            <span id="importStatus" style="display:block; margin-top: 8px; font-weight: bold; color: #27ae60;"></span>
         </div>
 
         <!-- ② 生徒選択セクション -->
@@ -149,7 +153,6 @@
                 </div>
 
                 <div class="grid-2col">
-                    <!-- 左側：記録テーブル -->
                     <div>
                         <h3>📋 種目別スコア詳細</h3>
                         <table class="score-table">
@@ -161,16 +164,11 @@
                                     <th>伸び・評価</th>
                                 </tr>
                             </thead>
-                            <tbody id="scoreTableBody">
-                                <!-- 動的に挿入 -->
-                            </tbody>
+                            <tbody id="scoreTableBody"></tbody>
                         </table>
-                        <div class="comment-box" id="aiComment">
-                            <!-- 自動評価コメント -->
-                        </div>
+                        <div class="comment-box" id="aiComment"></div>
                     </div>
 
-                    <!-- 右側：グラフ表示 -->
                     <div>
                         <h3>📈 前回・今回 比較グラフ</h3>
                         <div style="position: relative; height: 300px; width: 100%;">
@@ -180,70 +178,91 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
+        let workbookData = null;
         let allStudentsData = [];
         let myChart = null;
 
-        // エクセル読み込み処理
-        function importExcel(event) {
+        // ファイル選択時にワークブックを保持し、シートのリストを表示する
+        function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                workbookData = XLSX.read(data, { type: 'array' });
                 
-                // 「マスタ」シートを読む
-                const sheetName = workbook.SheetNames.includes('マスタ') ? 'マスタ' : workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+                const sheetSelect = document.getElementById('sheetSelect');
+                sheetSelect.innerHTML = '<option value="">-- シートを選択してください --</option>';
                 
-                // 2行目（インデックス2）からデータ行が始まる構造を想定
-                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                allStudentsData = [];
-                
-                // 行の走査（3行目以降、インデックス2〜）
-                for (let i = 2; i < rows.length; i++) {
-                    const row = rows[i];
-                    const name = row[1]; // 氏名
-                    if (!name) continue; // 名前が空の行はスキップ
-
-                    const student = {
-                        name: name,
-                        grade: row[2] || '不明',
-                        gender: row[3] || '不明',
-                        scores: {
-                            'ダイアゴナルラン(秒)': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
-                            'ストラックアウト(点)': { prev: row[6], current: row[7], unit: '点', lowerIsBetter: false },
-                            '立ち幅跳び(㎝)': { prev: row[8], current: row[9], unit: '㎝', lowerIsBetter: false },
-                            '反復横跳び(回)': { prev: row[10], current: row[11], unit: '回', lowerIsBetter: false },
-                            '上体起こし(回)': { prev: row[12], current: row[13], unit: '回', lowerIsBetter: false },
-                            '握力(右/左)': { prev: row[14], current: row[16], unit: 'kg', lowerIsBetter: false }, // 例として右前回/右今回など
-                            '長座体前屈(㎝)': { prev: row[17], current: row[18], unit: '㎝', lowerIsBetter: false },
-                            'ミニシャトルラン(回)': { prev: row[19], current: row[20], unit: '回', lowerIsBetter: false }
-                        }
-                    };
-                    allStudentsData.push(student);
-                }
-
-                // セレクトボックスの選択肢を更新
-                const select = document.getElementById('studentSelect');
-                select.innerHTML = '<option value="">-- 生徒を選んでください --</option>';
-                allStudentsData.forEach((st, index) => {
+                // ブック内の全シート名をセレクトボックスに追加
+                workbookData.SheetNames.forEach(sheetName => {
                     const opt = document.createElement('option');
-                    opt.value = index;
-                    opt.text = `${st.name} （${st.grade}）`;
-                    select.appendChild(opt);
+                    opt.value = sheetName;
+                    opt.text = sheetName;
+                    sheetSelect.appendChild(opt);
                 });
 
-                document.getElementById('importStatus').innerText = `✅ ${allStudentsData.length}名分のデータを読み込みました！`;
-                document.getElementById('selectSection').style.display = 'block';
+                document.getElementById('sheetSelectorArea').style.display = 'flex';
+                document.getElementById('importStatus').innerText = `✅ ファイルを読み込みました。シートを選択してください。`;
+                
+                // リセット
+                document.getElementById('selectSection').style.display = 'none';
+                document.getElementById('reportArea').style.display = 'none';
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // 選択されたシートのデータを読み込む
+        function loadSelectedSheet() {
+            const sheetName = document.getElementById('sheetSelect').value;
+            if (!sheetName || !workbookData) return;
+
+            const worksheet = workbookData.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            allStudentsData = [];
+            
+            // 3行目以降（インデックス2〜）を走査してデータを抽出
+            for (let i = 2; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row[1]; // 氏名
+                if (!name) continue; // 名前が空の行はスキップ
+
+                const student = {
+                    name: name,
+                    grade: row[2] || '不明',
+                    gender: row[3] || '不明',
+                    scores: {
+                        'ダイアゴナルラン(秒)': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
+                        'ストラックアウト(点)': { prev: row[6], current: row[7], unit: '点', lowerIsBetter: false },
+                        '立ち幅跳び(㎝)': { prev: row[8], current: row[9], unit: '㎝', lowerIsBetter: false },
+                        '反復横跳び(回)': { prev: row[10], current: row[11], unit: '回', lowerIsBetter: false },
+                        '上体起こし(回)': { prev: row[12], current: row[13], unit: '回', lowerIsBetter: false },
+                        '握力(右/左)': { prev: row[14], current: row[16], unit: 'kg', lowerIsBetter: false },
+                        '長座体前屈(㎝)': { prev: row[17], current: row[18], unit: '㎝', lowerIsBetter: false },
+                        'ミニシャトルラン(回)': { prev: row[19], current: row[20], unit: '回', lowerIsBetter: false }
+                    }
+                };
+                allStudentsData.push(student);
+            }
+
+            // 生徒選択セレクトボックスを更新
+            const studentSelect = document.getElementById('studentSelect');
+            studentSelect.innerHTML = '<option value="">-- 生徒を選んでください --</option>';
+            allStudentsData.forEach((st, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.text = `${st.name} （${st.grade}）`;
+                studentSelect.appendChild(opt);
+            });
+
+            document.getElementById('importStatus').innerText = `✅ 「${sheetName}」から ${allStudentsData.length}名分のデータを読み込みました！`;
+            document.getElementById('selectSection').style.display = 'block';
+            document.getElementById('reportArea').style.display = 'none';
         }
 
         // 生徒レポートの表示切り替え
@@ -275,7 +294,6 @@
                 const p = (data.prev !== undefined && data.prev !== null && data.prev !== '') ? Number(data.prev) : '-';
                 const c = (data.current !== undefined && data.current !== null && data.current !== '') ? Number(data.current) : '-';
                 
-                prevData.valueOf()
                 prevData.push(p === '-' ? 0 : p);
                 currData.push(c === '-' ? 0 : c);
 
@@ -310,8 +328,6 @@
             commentBox.innerHTML = `💡 <b>総合コメント:</b> ${student.name}さんは、計測種目のうち ${totalEvents} 種目中 <b>${improvedCount} 種目</b>で前回より記録を伸ばしています！全体的に運動機能の成長が見られます。引き続きバランスよく練習に取り組みましょう。`;
 
             reportArea.style.display = 'block';
-
-            // グラフ描画
             drawChart(labels, prevData, currData);
         }
 
@@ -320,7 +336,7 @@
             const ctx = document.getElementById('scoreChart').getContext('2d');
             
             if (myChart) {
-                myChart.destroy(); // 既存のグラフを破棄して再描画
+                myChart.destroy();
             }
 
             myChart = new Chart(ctx, {
