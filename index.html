@@ -72,7 +72,7 @@
         .student-header h2 { font-size: 1.1rem; margin: 0; }
         .student-info span { margin-right: 10px; font-weight: bold; font-size: 0.9rem; }
         
-        /* 左右2カラム（左：表＆大きめコメント欄、右：縦3×横3の縦長グラフエリア） */
+        /* 左右2カラム（左：表＆大きめコメント、右：縦3×横3のグラフエリア） */
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1.1fr;
@@ -133,7 +133,7 @@
             box-sizing: border-box;
         }
 
-        /* 縦3×横3配置のグラフグリッド（縦長で見やすく） */
+        /* 縦3×横3配置のグラフグリッド（縦長で見やすい形） */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -144,12 +144,12 @@
             background: #fafafa;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
-            padding: 4px;
+            padding: 5px;
             text-align: center;
         }
         .mini-chart-card h4 {
-            font-size: 0.7rem;
-            margin: 0 0 2px 0;
+            font-size: 0.72rem;
+            margin: 0 0 3px 0;
             color: #2c3e50;
         }
 
@@ -244,11 +244,11 @@
                         </div>
                     </div>
 
-                    <!-- 右側：縦3×横3の縦長グラフエリア -->
+                    <!-- 右側：縦3×横3の縦長・見やすい個別グラフエリア -->
                     <div>
                         <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
                         <div class="charts-grid" id="chartsGrid">
-                            <!-- JavaScriptで縦長グラフを動的生成 -->
+                            <!-- JavaScriptで縦長のグラフを動的生成 -->
                         </div>
                     </div>
                 </div>
@@ -472,27 +472,13 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: { 
-                            y: { beginAtZero: true, ticks: { font: { size: 8 } } },
-                            x: { ticks: { font: { size: 8 } } }
+                            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+                            x: { ticks: { font: { size: 9 } } }
                         }
                     }
                 });
                 activeCharts.push(miniChart);
             }
-
-            // 9枠目（全8種目のため空く1枠）にシステムロゴやちょっとした励ましメッセージカードを配置
-            const emptyCardDiv = document.createElement('div');
-            emptyCardDiv.className = 'mini-chart-card';
-            emptyCardDiv.style.display = 'flex';
-            emptyCardDiv.style.flexDirection = 'column';
-            emptyCardDiv.style.justifyContent = 'center';
-            emptyCardDiv.style.alignItems = 'center';
-            emptyCardDiv.style.background = '#f2f9f9';
-            emptyCardDiv.innerHTML = `
-                <h4 style="color: #16a085; margin-bottom: 2px;">🌟 総合評価</h4>
-                <p style="font-size: 0.7rem; color: #555; margin: 0; padding: 0 4px;">バランスよく成長中！この調子で頑張ろう！</p>
-            `;
-            chartsGrid.appendChild(emptyCardDiv);
 
             document.getElementById('textGood').value = goodPoints.length > 0 
                 ? goodPoints.join(' ') 
