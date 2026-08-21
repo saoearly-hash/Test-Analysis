@@ -370,19 +370,23 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function loadSelectedSheet() {
+function loadSelectedSheet() {
             currentSheetName = document.getElementById('sheetSelect').value;
             if (!currentSheetName || !workbookData) return;
 
             const worksheet = workbookData.Sheets[currentSheetName];
+            // sheet_to_json({header: 1}) で配列の配列として取得
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
             allStudentsData = [];
             
-            for (let i = 2; i < rows.length; i++) {
-                const row = rows[i];
-                const name = row[1];
-                if (!name) continue;
+            // 修正：すべての行をループし、名前(row[1])が存在する行のみを抽出
+            rows.forEach((row, index) => {
+                // インデックス0, 1はヘッダーやタイトル行と仮定してスキップしたい場合は
+                // if (index < 2) return; などを利用してください
+                
+                const name = row[1]; // 氏名がB列(インデックス1)にある前提
+                if (!name || name === "氏名" || name === "名前") return; // ヘッダー行をスキップ
 
                 const student = {
                     name: name,
@@ -400,8 +404,9 @@
                     }
                 };
                 allStudentsData.push(student);
-            }
+            });
 
+            // 以下、セレクトボックス生成などのコードはそのまま...
             const studentSelect = document.getElementById('studentSelect');
             studentSelect.innerHTML = '<option value="">-- 生徒を選んでください --</option>';
             allStudentsData.forEach((st, index) => {
