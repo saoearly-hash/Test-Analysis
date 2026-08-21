@@ -73,7 +73,7 @@
         
         .grid-2col {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.1fr 0.9fr;
             gap: 20px;
         }
         @media(max-width: 768px) {
@@ -103,6 +103,11 @@
             border-radius: 6px;
             font-size: 0.9rem;
             line-height: 1.5;
+            outline: none; /* 編集時のフォーカス枠を見やすく */
+        }
+        .comment-box[contenteditable="true"]:hover {
+            background-color: rgba(0,0,0,0.02);
+            box-shadow: inset 0 0 0 1px #3498db;
         }
         .comment-good {
             background: #e8f8f5;
@@ -112,12 +117,43 @@
             background: #fef9e7;
             border-left: 4px solid #f1c40f;
         }
+        .edit-hint {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        /* 個別グラフ並べ用グリッド */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .chart-card {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .chart-title {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            color: #34495e;
+            margin-bottom: 4px;
+        }
 
         @media print {
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
             .no-print { display: none !important; }
             .report-card { border: none; padding: 0; }
+            .charts-grid { max-height: none; overflow: visible; }
+            .comment-box[contenteditable="true"] { box-shadow: none !important; }
         }
     </style>
 </head>
@@ -185,19 +221,21 @@
                         </table>
                         
                         <div class="comment-container">
-                            <div class="comment-box comment-good" id="commentGood">
-                                <b>👍 良かった点:</b> <span id="textGood"></span>
+                            <div>
+                                <div class="comment-box comment-good" id="textGood" contenteditable="true"></div>
+                                <div class="edit-hint">✏️ クリックして文章を直接書き換え・修正できます</div>
                             </div>
-                            <div class="comment-box comment-task" id="commentTask">
-                                <b>🎯 今後の課題・アドバイス:</b> <span id="textTask"></span>
+                            <div>
+                                <div class="comment-box comment-task" id="textTask" contenteditable="true"></div>
+                                <div class="edit-hint">✏️ クリックして文章を直接書き換え・修正できます</div>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <h3>📈 前回・今回 比較グラフ</h3>
-                        <div style="position: relative; height: 320px; width: 100%;">
-                            <canvas id="scoreChart"></canvas>
+                        <h3>📈 種目別 比較グラフ</h3>
+                        <div class="charts-grid" id="chartsContainer">
+                            <!-- 各種目の個別グラフがここに動的に生成されます -->
                         </div>
                     </div>
                 </div>
@@ -209,7 +247,7 @@
         let workbookData = null;
         let allStudentsData = [];
         let currentSheetName = "";
-        let myChart = null;
+        let activeCharts = []; // 生成したチャートのインスタンス保持用
 
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -255,7 +293,7 @@
 
                 const student = {
                     name: name,
-                    grade: row[2] || '不明', // レポート上では「年齢」として表示
+                    grade: row[2] || '不明',
                     gender: row[3] || '不明',
                     scores: {
                         'ダイアゴナルラン': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
@@ -303,21 +341,23 @@
             const tbody = document.getElementById('scoreTableBody');
             tbody.innerHTML = '';
 
-            const labels = [];
-            const prevData = [];
-            const currData = [];
-
             let goodPoints = [];
             let taskPoints = [];
 
+            // グラフ用コンテナをクリア
+            const chartsContainer = document.getElementById('chartsContainer');
+            chartsContainer.innerHTML = '';
+            
+            // 既存のチャートインスタンスがあれば破棄
+            activeCharts.forEach(chart => chart.destroy());
+            activeCharts = [];
+
+            let chartIndex = 0;
+
             for (let [eventKey, data] of Object.entries(student.scores)) {
-                labels.push(eventKey);
                 const p = (data.prev !== undefined && data.prev !== null && data.prev !== '') ? Number(data.prev) : null;
                 const c = (data.current !== undefined && data.current !== null && data.current !== '') ? Number(data.current) : null;
                 
-                prevData.push(p === null ? 0 : p);
-                currData.push(c === null ? 0 : c);
-
                 let evalText = '-';
                 let nextTarget = '-';
 
@@ -355,7 +395,7 @@
                     }
                 }
 
-                // 保護者向けにわかりやすくかみ砕いた評価の振り分け
+                // コメントの自動振り分け
                 if (c !== null) {
                     if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
                         if (p !== null && c < p && data.lowerIsBetter || p !== null && c > p && !data.lowerIsBetter) {
@@ -393,57 +433,58 @@
                     <td style="color: #2980b9; font-weight: bold;">${nextTarget}</td>
                 `;
                 tbody.appendChild(tr);
+
+                // 各種目ごとの個別グラフカードを作成
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'chart-card';
+                cardDiv.innerHTML = `
+                    <div class="chart-title">${eventKey} (${data.unit})</div>
+                    <div style="position: relative; height: 110px; width: 100%;">
+                        <canvas id="miniChart_${chartIndex}"></canvas>
+                    </div>
+                `;
+                chartsContainer.appendChild(cardDiv);
+
+                // 個別グラフの描画
+                const ctx = document.getElementById(`miniChart_${chartIndex}`).getContext('2d');
+                const miniChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['前回', '今回'],
+                        datasets: [{
+                            data: [p !== null ? p : 0, c !== null ? c : 0],
+                            backgroundColor: ['rgba(189, 195, 199, 0.7)', 'rgba(52, 152, 219, 0.7)'],
+                            borderColor: ['rgba(127, 140, 141, 1)', 'rgba(41, 128, 185, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                            x: { ticks: { font: { size: 10 } } }
+                        }
+                    }
+                });
+                activeCharts.push(miniChart);
+                chartIndex++;
             }
 
-            // コメントの組み立て（保護者向けにわかりやすい表現）
-            document.getElementById('textGood').innerText = goodPoints.length > 0 
-                ? goodPoints.join(' ') 
-                : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の伸びしろがとても楽しみです！`;
+            // コメントの反映（手動編集できるようにHTMLタグに直接セット）
+            const defaultGood = goodPoints.length > 0 
+                ? `<b>👍 良かった点:</b> ` + goodPoints.join(' ') 
+                : `<b>👍 良かった点:</b> ${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の伸びしろがとても楽しみです！`;
 
-            document.getElementById('textTask').innerText = taskPoints.length > 0 
-                ? taskPoints.join(' ') 
-                : `全体的に元気に挑戦できています。日常の遊びや運動の中にさまざまな動きを取り入れることで、さらに身体能力が高まります。`;
+            const defaultTask = taskPoints.length > 0 
+                ? `<b>🎯 今後の課題・アドバイス:</b> ` + taskPoints.join(' ') 
+                : `<b>🎯 今後の課題・アドバイス:</b> 全体的に元気に挑戦できています。日常の遊びや運動の中にさまざまな動きを取り入れることで、さらに身体能力が高まります。`;
+
+            document.getElementById('textGood').innerHTML = defaultGood;
+            document.getElementById('textTask').innerHTML = defaultTask;
 
             reportArea.style.display = 'block';
-            drawChart(labels, prevData, currData);
-        }
-
-        function drawChart(labels, prevData, currData) {
-            const ctx = document.getElementById('scoreChart').getContext('2d');
-            
-            if (myChart) {
-                myChart.destroy();
-            }
-
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '前回記録',
-                            data: prevData,
-                            backgroundColor: 'rgba(189, 195, 199, 0.7)',
-                            borderColor: 'rgba(127, 140, 141, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: '今回記録',
-                            data: currData,
-                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                            borderColor: 'rgba(41, 128, 185, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
         }
     </script>
 </body>
