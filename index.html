@@ -102,6 +102,7 @@
             padding: 12px;
             border-radius: 6px;
             font-size: 0.9rem;
+            line-height: 1.5;
         }
         .comment-good {
             background: #e8f8f5;
@@ -185,10 +186,10 @@
                         
                         <div class="comment-container">
                             <div class="comment-box comment-good" id="commentGood">
-                                <b>💡 深代教授の評価（良かった点）:</b> <span id="textGood"></span>
+                                <b>👍 良かった点:</b> <span id="textGood"></span>
                             </div>
                             <div class="comment-box comment-task" id="commentTask">
-                                <b>🎯 深代教授の評価（今後の課題）:</b> <span id="textTask"></span>
+                                <b>🎯 今後の課題・アドバイス:</b> <span id="textTask"></span>
                             </div>
                         </div>
                     </div>
@@ -322,11 +323,10 @@
 
                 if (p !== null && c !== null) {
                     let diff = c - p;
-                    if (data.lowerIsBetter) diff = -diff; // 秒数などはマイナスが良い
+                    if (data.lowerIsBetter) diff = -diff;
 
                     if (diff > 0) {
                         evalText = '📈 向上';
-                        // 次回目標の自動算出（伸び幅の半分をさらに上乗せ、またはタイムなら短縮）
                         if (data.lowerIsBetter) {
                             nextTarget = Math.max(0, Number((c - (p - c) * 0.5).toFixed(2))) + ' ' + data.unit;
                         } else {
@@ -355,31 +355,31 @@
                     }
                 }
 
-                // 深代千之教授風の専門コメント・評価の振り分け
+                // 保護者向けにわかりやすくかみ砕いた評価の振り分け
                 if (c !== null) {
                     if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
                         if (p !== null && c < p && data.lowerIsBetter || p !== null && c > p && !data.lowerIsBetter) {
-                            goodPoints.push(`${eventKey}では、方向転換時の減速・再加速における下肢のキネティックチェーン（力の伝達）がスムーズであり、敏捷性と神経系のコーディネーション能力の向上が顕著に見られます。`);
+                            goodPoints.push(`${eventKey}では、素早く方向を切り替えながら最後まで走り抜ける敏捷性とスタミナがしっかり発揮されています。`);
                         } else {
-                            taskPoints.push(`${eventKey}において、方向転換の際に体幹のブレや減速ロスが見受けられます。重心を低く保ったアジリティの改善が今後のカギとなります。`);
+                            taskPoints.push(`${eventKey}では、方向転換のときに少しスピードが落ちてしまう場面がありました。姿勢を低くして曲がる練習をすると、さらにタイムが縮まります。`);
                         }
                     } else if (eventKey === '立ち幅跳び' || eventKey === '反復横跳び') {
                         if (p !== null && c >= p) {
-                            goodPoints.push(`${eventKey}で発揮された爆発的パワー（ストレッチ・ショートニング・サイクル）の活用が優れており、地面反力を効率よく推進力に変えられています。`);
+                            goodPoints.push(`${eventKey}では、足を力強く地面に蹴り出して大きく跳ぶ瞬発力がとてもよく伸びています。`);
                         } else {
-                            taskPoints.push(`${eventKey}では、床面からの反発力を瞬時に引き出すプライオメトリックな筋発揮の向上に余地があります。股関節周辺のダイナミックな連動を意識しましょう。`);
+                            taskPoints.push(`${eventKey}は、全身のバネを上手に使うタイミングをつかむと、さらに記録を伸ばすことができます。日頃からジャンプ動作を取り入れてみましょう。`);
                         }
                     } else if (eventKey === 'ストラックアウト') {
                         if (c >= 5) {
-                            goodPoints.push(`投動作における目と手の協応動作（眼球運動と上肢の空間認知）が非常に高く、正確なターゲット捕捉ができています。`);
+                            goodPoints.push(`狙った的をしっかり見てボールをコントロールする力が優れており、素晴らしい集中力が見られました。`);
                         } else {
-                            taskPoints.push(`投擲時における全身のバランス保持とリリースポイントの安定性を高めることで、さらなる正確性の向上が期待できます。`);
+                            taskPoints.push(`ボールを投げる際、狙う場所と体の向きを意識して練習すると、より正確に的を射抜けるようになります。`);
                         }
                     } else if (eventKey === '上体起こし' || eventKey === '握力' || eventKey === '長座体前屈') {
                         if (p !== null && c >= p) {
-                            goodPoints.push(`${eventKey}の基礎体力要素において、安定した筋力および柔軟性の維持・向上が見られます。`);
+                            goodPoints.push(`${eventKey}をはじめとする基礎体力や柔軟性がしっかり維持・向上しており、バランスよく成長しています。`);
                         } else {
-                            taskPoints.push(`${eventKey}の数値向上に向けて、日常的な体幹の安定化や可動域を広げるストレッチを習慣化していきましょう。`);
+                            taskPoints.push(`${eventKey}の向上に向けて、おうちでも楽しくストレッチや体幹の運動を取り入れてみましょう。`);
                         }
                     }
                 }
@@ -395,14 +395,14 @@
                 tbody.appendChild(tr);
             }
 
-            // コメントの組み立て（深代教授の視点）
+            // コメントの組み立て（保護者向けにわかりやすい表現）
             document.getElementById('textGood').innerText = goodPoints.length > 0 
                 ? goodPoints.join(' ') 
-                : `${student.name}さんは、各種目に対して真摯に向き合っており、全体的な運動器の動的バランスに伸びしろがあります。`;
+                : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の伸びしろがとても楽しみです！`;
 
             document.getElementById('textTask').innerText = taskPoints.length > 0 
                 ? taskPoints.join(' ') 
-                : `身体の柔軟性と巧緻性を高めるコーディネーショントレーニングを継続し、さらなるパフォーマンスの底上げを図りましょう。`;
+                : `全体的に元気に挑戦できています。日常の遊びや運動の中にさまざまな動きを取り入れることで、さらに身体能力が高まります。`;
 
             reportArea.style.display = 'block';
             drawChart(labels, prevData, currData);
