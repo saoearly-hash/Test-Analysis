@@ -72,7 +72,7 @@
         .student-header h2 { font-size: 1.1rem; margin: 0; }
         .student-info span { margin-right: 10px; font-weight: bold; font-size: 0.9rem; }
         
-        /* 左右2カラム（左：表＆大きめコメント、右：縦3×横3のグラフエリア） */
+        /* 左右2カラム */
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1.1fr;
@@ -133,7 +133,7 @@
             box-sizing: border-box;
         }
 
-        /* 縦3×横3配置のグラフグリッド（グラフ幅をスリムに調整） */
+        /* 縦3×横3配置のグラフグリッド */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -155,12 +155,12 @@
             margin: 0 0 3px 0;
             color: #2c3e50;
         }
-        /* グラフ自体のカンバス幅を制限してスリム化 */
+        /* グラフ自体の横幅を制限してスリム化 */
         .chart-wrapper {
             position: relative;
             height: 75px;
-            width: 80%; /* 横幅を細くスリムに絞る */
-            max-width: 110px;
+            width: 70px; /* 横幅を細くスリムに固定 */
+            margin: 0 auto;
         }
 
         /* 印刷設定：A4用紙1ページに美しく収める */
@@ -176,7 +176,6 @@
             .comment-box textarea { border: none; background: transparent; height: auto; resize: none; overflow: visible; }
             .charts-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; }
             .mini-chart-card { height: 90px; }
-            .chart-wrapper { width: 75px; }
         }
     </style>
 </head>
@@ -234,7 +233,7 @@
                             <thead>
                                 <tr>
                                     <th>測定種目</th>
-                                    <th id="thPrevLabel">最初期</th>
+                                    <th>前回</th>
                                     <th>今回</th>
                                     <th>評価</th>
                                     <th>次回目標</th>
@@ -255,9 +254,9 @@
                         </div>
                     </div>
 
-                    <!-- 右側：縦3×横3のスリムな個別グラフエリア -->
+                    <!-- 右側：縦3×横3のスリムなグラフエリア -->
                     <div>
-                        <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ (<span id="graphPrevLabel">最初期</span> vs 今回)</h3>
+                        <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
                         <div class="charts-grid" id="chartsGrid">
                             <!-- JavaScriptでスリムなグラフを動的生成 -->
                         </div>
@@ -269,9 +268,7 @@
 
     <script>
         let workbookData = null;
-        let allSheetsMasterData = {}; // 全シートの生徒データを保持
-        let sheetNamesList = [];
-        let earliestSheetName = "";
+        let allStudentsData = [];
         let currentSheetName = "";
         let activeCharts = [];
 
@@ -284,58 +281,18 @@
                 const data = new Uint8Array(e.target.result);
                 workbookData = XLSX.read(data, { type: 'array' });
                 
-                sheetNamesList = workbookData.SheetNames;
-                
-                // ① シート名の並び、または数字や日付を手がかりに「最初期のシート」を自動特定する
-                // 例: "1回目", "1st", "4月", "前期" などのキーワード、またはリストの先頭を最初期とする
-                earliestSheetName = sheetNamesList[0]; 
-                for (let sName of sheetNamesList) {
-                    if (sName.includes('1') || sName.includes('初') || sName.includes('前') || sName.includes('4月') || sName.includes('5月')) {
-                        earliestSheetName = sName;
-                        break;
-                    }
-                }
-
-                // 全シートのデータを解析して保持しておく
-                allSheetsMasterData = {};
-                sheetNamesList.forEach(sName => {
-                    const ws = workbookData.Sheets[sName];
-                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-                    const map = {};
-                    for (let i = 2; i < rows.length; i++) {
-                        const row = rows[i];
-                        const name = row[1];
-                        if (!name) continue;
-                        map[name] = {
-                            grade: row[2] || '不明',
-                            gender: row[3] || '不明',
-                            scores: {
-                                'ダイアゴナルラン': row[5],
-                                'ストラックアウト': row[7],
-                                '立ち幅跳び': row[9],
-                                '反復横跳び': row[11],
-                                '上体起こし': row[13],
-                                '握力': row[16],
-                                '長座体前屈': row[18],
-                                'ミニシャトルラン': row[20]
-                            }
-                        };
-                    }
-                    allSheetsMasterData[sName] = map;
-                });
-
                 const sheetSelect = document.getElementById('sheetSelect');
                 sheetSelect.innerHTML = '<option value="">-- シートを選択してください --</option>';
                 
-                sheetNamesList.forEach(sheetName => {
+                workbookData.SheetNames.forEach(sheetName => {
                     const opt = document.createElement('option');
                     opt.value = sheetName;
-                    opt.text = sheetName + (sheetName === earliestSheetName ? ' (★最初期・比較元)' : '');
+                    opt.text = sheetName;
                     sheetSelect.appendChild(opt);
                 });
 
                 document.getElementById('sheetSelectorArea').style.display = 'flex';
-                document.getElementById('importStatus').innerText = `✅ 読み込み完了。最初期の記録として「${earliestSheetName}」を自動検出しました。`;
+                document.getElementById('importStatus').innerText = `✅ ファイルを読み込みました。シートを選択してください。`;
                 
                 document.getElementById('selectSection').style.display = 'none';
                 document.getElementById('reportArea').style.display = 'none';
@@ -347,50 +304,33 @@
             currentSheetName = document.getElementById('sheetSelect').value;
             if (!currentSheetName || !workbookData) return;
 
-            const currentMap = allSheetsMasterData[currentSheetName] || {};
+            const worksheet = workbookData.Sheets[currentSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
             allStudentsData = [];
-            Object.keys(currentMap).forEach(name => {
-                const stData = currentMap[name];
-                
-                // 最初期のシートから同じ生徒のデータを検索して「最初期の記録(prev)」とする
-                const earliestMap = allSheetsMasterData[earliestSheetName] || {};
-                const earliestSt = earliestMap[name] || {};
+            
+            for (let i = 2; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row[1];
+                if (!name) continue;
 
-                const units = {
-                    'ダイアゴナルラン': { unit: '秒', lowerIsBetter: true },
-                    'ストラックアウト': { unit: '点', lowerIsBetter: false },
-                    '立ち幅跳び': { unit: '㎝', lowerIsBetter: false },
-                    '反復横跳び': { unit: '回', lowerIsBetter: false },
-                    '上体起こし': { unit: '回', lowerIsBetter: false },
-                    '握力': { unit: 'kg', lowerIsBetter: false },
-                    '長座体前屈': { unit: '㎝', lowerIsBetter: false },
-                    'ミニシャトルラン': { unit: '回', lowerIsBetter: false }
-                };
-
-                const scoresObj = {};
-                for (let [key, meta] of Object.entries(units)) {
-                    let prevVal = earliestSt.scores ? earliestSt.scores[key] : null;
-                    let currVal = stData.scores[key];
-                    // もし現在選んでいるシートがそのもの初期シートなら、前回値は比較できないので空にする
-                    if (currentSheetName === earliestSheetName) {
-                        prevVal = null;
-                    }
-                    scoresObj[key] = {
-                        prev: prevVal,
-                        current: currVal,
-                        unit: meta.unit,
-                        lowerIsBetter: meta.lowerIsBetter
-                    };
-                }
-
-                allStudentsData.push({
+                const student = {
                     name: name,
-                    grade: stData.grade,
-                    gender: stData.gender,
-                    scores: scoresObj
-                });
-            });
+                    grade: row[2] || '不明',
+                    gender: row[3] || '不明',
+                    scores: {
+                        'ダイアゴナルラン': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
+                        'ストラックアウト': { prev: row[6], current: row[7], unit: '点', lowerIsBetter: false },
+                        '立ち幅跳び': { prev: row[8], current: row[9], unit: '㎝', lowerIsBetter: false },
+                        '反復横跳び': { prev: row[10], current: row[11], unit: '回', lowerIsBetter: false },
+                        '上体起こし': { prev: row[12], current: row[13], unit: '回', lowerIsBetter: false },
+                        '握力': { prev: row[14], current: row[16], unit: 'kg', lowerIsBetter: false },
+                        '長座体前屈': { prev: row[17], current: row[18], unit: '㎝', lowerIsBetter: false },
+                        'ミニシャトルラン': { prev: row[19], current: row[20], unit: '回', lowerIsBetter: false }
+                    }
+                };
+                allStudentsData.push(student);
+            }
 
             const studentSelect = document.getElementById('studentSelect');
             studentSelect.innerHTML = '<option value="">-- 生徒を選んでください --</option>';
@@ -401,12 +341,10 @@
                 studentSelect.appendChild(opt);
             });
 
-            document.getElementById('importStatus').innerText = `✅ 「${currentSheetName}」のデータを読み込みました（比較元: ${earliestSheetName}）`;
+            document.getElementById('importStatus').innerText = `✅ 「${currentSheetName}」から ${allStudentsData.length}名分のデータを読み込みました！`;
             document.getElementById('selectSection').style.display = 'block';
             document.getElementById('reportArea').style.display = 'none';
         }
-
-        let allStudentsData = [];
 
         function displayStudentReport() {
             const index = document.getElementById('studentSelect').value;
@@ -422,12 +360,6 @@
             document.getElementById('repName').innerText = student.name;
             document.getElementById('repGrade').innerText = student.grade;
             document.getElementById('repGender').innerText = student.gender;
-
-            // 表のヘッダーのラベルを更新（最初期のシート名を表示）
-            const isInitial = (currentSheetName === earliestSheetName);
-            const prevHeaderLabel = isInitial ? '最初期(-)' : earliestSheetName;
-            document.getElementById('thPrevLabel').innerText = prevHeaderLabel;
-            document.getElementById('graphPrevLabel').innerText = prevHeaderLabel;
 
             const tbody = document.getElementById('scoreTableBody');
             tbody.innerHTML = '';
@@ -537,12 +469,13 @@
                 const miniChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: [isInitial ? '基準' : '最初期', '今回'],
+                        labels: ['前回', '今回'],
                         datasets: [{
                             data: [p !== null ? p : 0, c !== null ? c : 0],
                             backgroundColor: ['rgba(189, 195, 199, 0.7)', 'rgba(52, 152, 219, 0.7)'],
                             borderColor: ['rgba(127, 140, 141, 1)', 'rgba(41, 128, 185, 1)'],
-                            borderWidth: 1
+                            borderWidth: 1,
+                            barPercentage: 0.75
                         }]
                     },
                     options: {
