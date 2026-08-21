@@ -72,11 +72,11 @@
         .student-header h2 { font-size: 1.1rem; margin: 0; }
         .student-info span { margin-right: 10px; font-weight: bold; font-size: 0.9rem; }
         
-        /* 左右2カラム（左：表＆コメント、右：縦4×横2のグラフ） */
+        /* 左右2カラム（左：表＆大きめコメント欄、右：縦4×横2のグラフ） */
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 15px;
             align-items: start;
         }
         @media(max-width: 900px) {
@@ -86,25 +86,26 @@
         table.score-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.75rem;
-            margin-bottom: 8px;
+            font-size: 0.78rem;
+            margin-bottom: 10px;
         }
         table.score-table th, table.score-table td {
             border: 1px solid #ddd;
-            padding: 3px 4px;
+            padding: 4px;
             text-align: center;
         }
         table.score-table th { background: #f2f2f2; }
         
+        /* コメント欄を大きく表示 */
         .comment-container {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
         .comment-box {
-            padding: 6px 8px;
+            padding: 8px 10px;
             border-radius: 4px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
         .comment-good {
             background: #e8f8f5;
@@ -117,17 +118,17 @@
         .comment-box label {
             display: block;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         .comment-box textarea {
             width: 100%;
-            height: 38px;
-            padding: 3px;
-            font-size: 0.8rem;
+            height: 75px; /* 高さを確保して大きく表示 */
+            padding: 6px;
+            font-size: 0.85rem;
             font-family: inherit;
             border: 1px solid #ccc;
             border-radius: 4px;
-            resize: none;
+            resize: vertical;
             background: #fff;
             box-sizing: border-box;
         }
@@ -137,22 +138,22 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(4, 1fr);
-            gap: 5px;
+            gap: 6px;
         }
         .mini-chart-card {
             background: #fafafa;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
-            padding: 3px;
+            padding: 4px;
             text-align: center;
         }
         .mini-chart-card h4 {
-            font-size: 0.7rem;
-            margin: 0 0 1px 0;
+            font-size: 0.75rem;
+            margin: 0 0 2px 0;
             color: #2c3e50;
         }
 
-        /* 印刷設定：A4用紙1ページに完全に収める */
+        /* 印刷設定：A4用紙1ページに美しく収める */
         @media print {
             @page {
                 size: A4 portrait; /* A4縦向き */
@@ -162,8 +163,8 @@
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
             .no-print { display: none !important; }
             .report-card { border: 1px solid #999; padding: 8px; margin-top: 0; }
-            .comment-box textarea { border: none; background: transparent; height: auto; overflow: visible; }
-            .charts-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); gap: 4px; }
+            .comment-box textarea { border: none; background: transparent; height: auto; resize: none; overflow: visible; }
+            .charts-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); gap: 5px; }
             .mini-chart-card { height: 75px; }
         }
     </style>
@@ -215,9 +216,9 @@
                 </div>
 
                 <div class="grid-2col">
-                    <!-- 左側：スコア表 ＆ コメント欄 -->
+                    <!-- 左側：スコア表 ＆ 大きめのコメント欄 -->
                     <div>
-                        <h3 style="font-size: 0.85rem; margin: 0 0 4px 0; color:#2c3e50;">📋 種目別スコア詳細 ＆ 次回目標</h3>
+                        <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📋 種目別スコア詳細 ＆ 次回目標</h3>
                         <table class="score-table">
                             <thead>
                                 <tr>
@@ -245,7 +246,7 @@
 
                     <!-- 右側：縦4×横2のコンパクトな個別グラフエリア -->
                     <div>
-                        <h3 style="font-size: 0.85rem; margin: 0 0 4px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
+                        <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
                         <div class="charts-grid" id="chartsGrid">
                             <!-- JavaScriptでコンパクトなグラフを動的生成 -->
                         </div>
