@@ -427,112 +427,124 @@ function loadSelectedSheet() {
         }
 
 function displayStudentReport() {
-            const index = document.getElementById('studentSelect').value;
-            const reportArea = document.getElementById('reportArea');
-            
-            if (index === "") {
-                reportArea.style.display = 'none';
-                return;
-            }
+    const index = document.getElementById('studentSelect').value;
+    const reportArea = document.getElementById('reportArea');
+    
+    if (index === "") {
+        reportArea.style.display = 'none';
+        return;
+    }
 
-            const student = allStudentsData[index];
-            document.getElementById('repSheetName').innerText = currentSheetName;
-            document.getElementById('repName').innerText = student.name;
-            document.getElementById('repGrade').innerText = student.grade;
-            document.getElementById('repGender').innerText = student.gender;
+    const student = allStudentsData[index];
+    document.getElementById('repSheetName').innerText = currentSheetName;
+    document.getElementById('repName').innerText = student.name;
+    document.getElementById('repGrade').innerText = student.grade;
+    document.getElementById('repGender').innerText = student.gender;
 
-            const gNum = getGradeNumber(student.grade);
-            const gKey = getGenderKey(student.gender);
-            const bench = nationalBenchmarks[gKey][gNum];
+    const gNum = getGradeNumber(student.grade);
+    const gKey = getGenderKey(student.gender);
+    const bench = nationalBenchmarks[gKey][gNum];
 
-            const customBenchmarks = {
-                'ダイアゴナルラン': Number((bench.run50 * 1.2).toFixed(2)),
-                'ストラックアウト': 5,
-                '立ち幅跳び': bench.jump,
-                '反復横跳び': bench.side,
-                '上体起こし': bench.situp,
-                '握力': bench.grip,
-                '長座体前屈': bench.flex,
-                'ミニシャトルラン': Math.round(bench.shuttle * 1.3)
-            };
+    const customBenchmarks = {
+        'ダイアゴナルラン': Number((bench.run50 * 1.2).toFixed(2)),
+        'ストラックアウト': 5,
+        '立ち幅跳び': bench.jump,
+        '反復横跳び': bench.side,
+        '上体起こし': bench.situp,
+        '握力': bench.grip,
+        '長座体前屈': bench.flex,
+        'ミニシャトルラン': Math.round(bench.shuttle * 1.3)
+    };
 
-            const tbody = document.getElementById('scoreTableBody');
-            tbody.innerHTML = '';
-            let goodPoints = [];
-            let taskPoints = [];
-            
-            activeCharts.forEach(chart => chart.destroy());
-            activeCharts = [];
-            const chartsGrid = document.getElementById('chartsGrid');
-            chartsGrid.innerHTML = '';
+    const tbody = document.getElementById('scoreTableBody');
+    tbody.innerHTML = '';
+    let goodPoints = [];
+    let taskPoints = [];
+    
+    activeCharts.forEach(chart => chart.destroy());
+    activeCharts = [];
+    const chartsGrid = document.getElementById('chartsGrid');
+    chartsGrid.innerHTML = '';
 
-            let chartIndex = 0;
+    let chartIndex = 0;
 
-            for (let [eventKey, data] of Object.entries(student.scores)) {
-                const p = (data.prev !== undefined && data.prev !== null && data.prev !== '') ? Number(data.prev) : null;
-                const c = (data.current !== undefined && data.current !== null && data.current !== '') ? Number(data.current) : null;
-                
-                let evalText = '-';
-                let nextTarget = '-';
-                const stdVal = customBenchmarks[eventKey];
+    for (let [eventKey, data] of Object.entries(student.scores)) {
+        const p = (data.prev !== undefined && data.prev !== null && data.prev !== '') ? Number(data.prev) : null;
+        const c = (data.current !== undefined && data.current !== null && data.current !== '') ? Number(data.current) : null;
+        
+        let evalText = '-';
+        let nextTarget = '-';
+        const stdVal = customBenchmarks[eventKey];
 
-                if (p !== null && c !== null) {
-                    let diff = c - p;
-                    if (data.lowerIsBetter) diff = -diff;
-                    evalText = diff > 0 ? '📈 向上' : (diff < 0 ? '📉 惜しい' : '➡️ 横ばい');
-                    nextTarget = (diff > 0 ? (data.lowerIsBetter ? Math.max(0, Number((c - (p - c) * 0.5).toFixed(2))) : Math.round(c + (c - p) * 0.5)) : (data.lowerIsBetter ? Number((c - 0.2).toFixed(2)) : (c + 1))) + ' ' + data.unit;
-                } else if (c !== null) {
-                    nextTarget = (data.lowerIsBetter ? Number((c - 0.2).toFixed(2)) : (c + 2)) + ' ' + data.unit;
-                }
-
-                // 【修正箇所】年齢・性別を完全に排除
-                if (c !== null) {
-                    const isAboveAvg = data.lowerIsBetter ? (c <= stdVal) : (c >= stdVal);
-                    // ここで学年のみを使用し、年齢・性別の文言を完全に削除
-                    const avgText = `平均水準`; 
-
-                    if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
-                        if (isAboveAvg) {
-                            goodPoints.push(`${eventKey}では、${avgText}を上回る素早い方向転換と持久力が発揮されており、高い敏捷性が見られます。`);
-                        } else {
-                            taskPoints.push(`${eventKey}では、コーナーを回る際や後半の疲労時に少し減速する傾向が見られます。姿勢を低くして足腰のバネを使う意識を持つことで、記録が伸びます。`);
-                        }
-                    } else if (eventKey === '立ち幅跳び' || eventKey === '反復横跳び') {
-                        if (isAboveAvg) {
-                            goodPoints.push(`${eventKey}において${avgText}を超える優れた跳躍力・敏捷性を記録しており、全身のバランスと瞬発力が非常に良好です。`);
-                        } else {
-                            taskPoints.push(`${eventKey}は、踏み切る瞬間のタイミングや着地の膝のクッションを意識すると、${avgText}をさらに超える能力が身につきます。`);
-                        }
-                    } else if (eventKey === 'ストラックアウト') {
-                        if (c >= stdVal) {
-                            goodPoints.push(`ターゲットを正確に見据えた抜群のコントロール力と集中力を発揮し、狙い通りの投球ができています。`);
-                        } else {
-                            taskPoints.push(`投球の際、狙う的に対して体の軸をまっすぐ正す意識を持つと、より安定したコントロールが身につきます。`);
-                        }
-                    } else if (eventKey === '上体起こし' || eventKey === '握力' || eventKey === '長座体前屈') {
-                        if (isAboveAvg) {
-                            goodPoints.push(`${eventKey}は${avgText}をクリアしており、基礎的な筋力・柔軟性がしっかりと備わっています。`);
-                        } else {
-                            taskPoints.push(`${eventKey}の向上に向けて、日常的なストレッチや体幹トレーニングをご家庭でも楽しく取り入れてみましょう。`);
-                        }
-                    }
-                }
-                
-                // (以下、表生成とグラフ生成のコードは変更なしでそのまま繋げてください)
-                // ... (tr作成、canvas作成などのコード) ...
-            }
-
-            document.getElementById('textGood').value = goodPoints.length > 0 ? goodPoints.join(' ') : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の成長がとても楽しみです！`;
-            // ここも修正：学年や性別に言及しない形式に
-            document.getElementById('textTask').value = taskPoints.length > 0 ? taskPoints.join(' ') : `日々の遊びや運動の中に様々な動きを取り入れることで、さらなる総合的な身体能力の向上が期待できます。`;
-
-            reportArea.style.display = 'block';
-            setTimeout(() => {
-                document.querySelectorAll('.comment-box textarea').forEach(ta => autoResizeTextarea(ta));
-            }, 50);
-
-            reportArea.style.display = 'block';
+        if (p !== null && c !== null) {
+            let diff = c - p;
+            if (data.lowerIsBetter) diff = -diff;
+            evalText = diff > 0 ? '📈 向上' : (diff < 0 ? '📉 惜しい' : '➡️ 横ばい');
+            nextTarget = (diff > 0 ? (data.lowerIsBetter ? Math.max(0, Number((c - (p - c) * 0.5).toFixed(2))) : Math.round(c + (c - p) * 0.5)) : (data.lowerIsBetter ? Number((c - 0.2).toFixed(2)) : (c + 1))) + ' ' + data.unit;
+        } else if (c !== null) {
+            nextTarget = (data.lowerIsBetter ? Number((c - 0.2).toFixed(2)) : (c + 2)) + ' ' + data.unit;
         }
+
+        if (c !== null) {
+            const isAboveAvg = data.lowerIsBetter ? (c <= stdVal) : (c >= stdVal);
+            const avgText = `平均水準`; 
+
+            if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
+                if (isAboveAvg) {
+                    goodPoints.push(`${eventKey}では、${avgText}を上回る素早い方向転換と持久力が発揮されており、高い敏捷性が見られます。`);
+                } else {
+                    taskPoints.push(`${eventKey}では、コーナーを回る際や後半の疲労時に少し減速する傾向が見られます。姿勢を低くして足腰のバネを使う意識を持つことで、記録が伸びます。`);
+                }
+            } else if (eventKey === '立ち幅跳び' || eventKey === '反復横跳び') {
+                if (isAboveAvg) {
+                    goodPoints.push(`${eventKey}において${avgText}を超える優れた跳躍力・敏捷性を記録しており、全身のバランスと瞬発力が非常に良好です。`);
+                } else {
+                    taskPoints.push(`${eventKey}は、踏み切る瞬間のタイミングや着地の膝のクッションを意識すると、${avgText}をさらに超える能力が身につきます。`);
+                }
+            } else if (eventKey === 'ストラックアウト') {
+                if (c >= stdVal) {
+                    goodPoints.push(`ターゲットを正確に見据えた抜群のコントロール力と集中力を発揮し、狙い通りの投球ができています。`);
+                } else {
+                    taskPoints.push(`投球の際、狙う的に対して体の軸をまっすぐ正す意識を持つと、より安定したコントロールが身につきます。`);
+                }
+            } else if (eventKey === '上体起こし' || eventKey === '握力' || eventKey === '長座体前屈') {
+                if (isAboveAvg) {
+                    goodPoints.push(`${eventKey}は${avgText}をクリアしており、基礎的な筋力・柔軟性がしっかりと備わっています。`);
+                } else {
+                    taskPoints.push(`${eventKey}の向上に向けて、日常的なストレッチや体幹トレーニングをご家庭でも楽しく取り入れてみましょう。`);
+                }
+            }
+        }
+
+        // --- 表の生成 ---
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><b>${eventKey}</b></td><td>${p !== null ? p + ' ' + data.unit : '-'}</td><td><b>${c !== null ? c + ' ' + data.unit : '-'}</b></td><td>${evalText}</td><td style="color: #2980b9; font-weight: bold;">${nextTarget}</td>`;
+        tbody.appendChild(tr);
+
+        // --- グラフの生成 ---
+        const canvasId = `miniChart_${chartIndex++}`;
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'mini-chart-card';
+        cardDiv.innerHTML = `<h4>${eventKey} (${data.unit})</h4><div class="chart-wrapper"><canvas id="${canvasId}"></canvas></div>`;
+        chartsGrid.appendChild(cardDiv);
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const miniChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['前回', '今回'], datasets: [{ data: [p !== null ? p : 0, c !== null ? c : 0], backgroundColor: ['rgba(189, 195, 199, 0.7)', 'rgba(52, 152, 219, 0.7)'], borderColor: ['rgba(127, 140, 141, 1)', 'rgba(41, 128, 185, 1)'], borderWidth: 1, barPercentage: 0.75 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } } }
+        });
+        activeCharts.push(miniChart);
+    }
+
+    document.getElementById('textGood').value = goodPoints.length > 0 ? goodPoints.join(' ') : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の成長がとても楽しみです！`;
+    document.getElementById('textTask').value = taskPoints.length > 0 ? taskPoints.join(' ') : `日々の遊びや運動の中に様々な動きを取り入れることで、さらなる総合的な身体能力の向上が期待できます。`;
+
+    reportArea.style.display = 'block';
+    setTimeout(() => {
+        document.querySelectorAll('.comment-box textarea').forEach(ta => autoResizeTextarea(ta));
+    }, 50);
+}
     </script>
 </body>
 </html>
