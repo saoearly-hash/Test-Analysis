@@ -122,7 +122,7 @@
         }
         .comment-box textarea {
             width: 100%;
-            height: 75px; /* 高さを確保して大きく表示 */
+            height: 75px;
             padding: 6px;
             font-size: 0.85rem;
             font-family: inherit;
@@ -133,7 +133,7 @@
             box-sizing: border-box;
         }
 
-        /* 縦4×横2配置のグラフグリッド */
+        /* 縦4×横2配置のグラフグリッド（縦長に見やすく修正） */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -148,7 +148,7 @@
             text-align: center;
         }
         .mini-chart-card h4 {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             margin: 0 0 2px 0;
             color: #2c3e50;
         }
@@ -165,7 +165,7 @@
             .report-card { border: 1px solid #999; padding: 8px; margin-top: 0; }
             .comment-box textarea { border: none; background: transparent; height: auto; resize: none; overflow: visible; }
             .charts-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); gap: 5px; }
-            .mini-chart-card { height: 75px; }
+            .mini-chart-card { height: 95px; }
         }
     </style>
 </head>
@@ -244,11 +244,11 @@
                         </div>
                     </div>
 
-                    <!-- 右側：縦4×横2のコンパクトな個別グラフエリア -->
+                    <!-- 右側：縦4×横2の縦長で見やすい個別グラフエリア -->
                     <div>
                         <h3 style="font-size: 0.9rem; margin: 0 0 5px 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
                         <div class="charts-grid" id="chartsGrid">
-                            <!-- JavaScriptでコンパクトなグラフを動的生成 -->
+                            <!-- JavaScriptで縦長のグラフを動的生成 -->
                         </div>
                     </div>
                 </div>
@@ -449,7 +449,7 @@
                 cardDiv.className = 'mini-chart-card';
                 cardDiv.innerHTML = `
                     <h4>${eventKey} (${data.unit})</h4>
-                    <div style="position: relative; height: 52px; width: 100%;">
+                    <div style="position: relative; height: 72px; width: 100%;">
                         <canvas id="${canvasId}"></canvas>
                     </div>
                 `;
@@ -472,8 +472,8 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: { 
-                            y: { beginAtZero: true, ticks: { font: { size: 8 } } },
-                            x: { ticks: { font: { size: 8 } } }
+                            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+                            x: { ticks: { font: { size: 9 } } }
                         }
                     }
                 });
