@@ -426,7 +426,7 @@ function loadSelectedSheet() {
             document.getElementById('reportArea').style.display = 'none';
         }
 
-        function displayStudentReport() {
+function displayStudentReport() {
             const index = document.getElementById('studentSelect').value;
             const reportArea = document.getElementById('reportArea');
             
@@ -513,10 +513,10 @@ function loadSelectedSheet() {
                     }
                 }
 
-                // 年齢・性別・全国平均を考慮したきめ細やかなコメント生成
+                // 年齢・性別の直接記述を避け、学年ベースの水準表現に調整したコメント生成
                 if (c !== null) {
                     const isAboveAvg = data.lowerIsBetter ? (c <= stdVal) : (c >= stdVal);
-                    const ageGroupText = `${student.grade}${gKey}児の平均水準`;
+                    const ageGroupText = `${student.grade}の平均水準`; // 性別・年齢の文字を排除
 
                     if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
                         if (isAboveAvg) {
@@ -596,13 +596,15 @@ function loadSelectedSheet() {
                 ? goodPoints.join(' ') 
                 : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の成長がとても楽しみです！`;
 
+            // デフォルトの課題コメントからも性別表記を除外
             document.getElementById('textTask').value = taskPoints.length > 0 
                 ? taskPoints.join(' ') 
-                : `${student.grade}${student.gender}の平均水準を踏まえ、日々の遊びや運動の中に様々な動きを取り入れることで、さらなる総合的な身体能力の向上が期待できます。`;
+                : `${student.grade}の平均水準を踏まえ、日々の遊びや運動の中に様々な動きを取り入れることで、さらなる総合的な身体能力の向上が期待できます。`;
 
             setTimeout(() => {
                 document.querySelectorAll('.comment-box textarea').forEach(ta => autoResizeTextarea(ta));
             }, 50);
+        }
 
             reportArea.style.display = 'block';
         }
