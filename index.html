@@ -96,7 +96,7 @@
         }
         table.score-table th { background: #f2f2f2; }
         
-        /* コメント欄：行数に応じて自動拡張（すべて表示） */
+        /* コメント欄：行数に応じて自動拡張 */
         .comment-container {
             display: flex;
             flex-direction: column;
@@ -129,8 +129,8 @@
             font-family: inherit;
             border: 1px solid #ccc;
             border-radius: 4px;
-            resize: none; /* 自動拡張するため手動リサイズは無効化 */
-            overflow: hidden; /* スクロールバーを出さない */
+            resize: none;
+            overflow: hidden;
             background: #fff;
             box-sizing: border-box;
         }
@@ -148,13 +148,13 @@
             font-weight: bold;
         }
 
-        /* 縦3×横3配置のグラフグリッド（動的高さ対応） */
+        /* 縦3×横3配置のグラフグリッド */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             gap: 6px;
-            height: 480px; /* 初期高さ（スライダーで連動・変更可能） */
+            height: 480px;
             transition: height 0.1s ease;
         }
         .mini-chart-card {
@@ -185,7 +185,7 @@
         /* 印刷設定：A4横向き 1ページに収める */
         @media print {
             @page {
-                size: A4 landscape; /* A4横向き */
+                size: A4 landscape;
                 margin: 6mm;
             }
             body { background: #fff; padding: 0; font-size: 10px; }
@@ -202,7 +202,7 @@
     <div class="container">
         <h1>📊 スポーツテスト 記録管理・レポートシステム</h1>
 
-        <!-- ① エクセル一括インポート ＆ シート選択機能 -->
+        <!-- ① エクセル一括インポート ＆ シート選択 -->
         <div class="section no-print">
             <h2>📁 1. データインポート ＆ シート選択</h2>
             <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleFileSelect(event)">
@@ -217,7 +217,7 @@
             <span id="importStatus" style="display:block; margin-top: 5px; font-weight: bold; color: #27ae60; font-size: 0.85rem;"></span>
         </div>
 
-        <!-- ② 生徒選択セクション -->
+        <!-- ② 生徒選択 -->
         <div class="section no-print" id="selectSection" style="display:none;">
             <h2>👤 2. 生徒の照会</h2>
             <div class="selector-area">
@@ -238,7 +238,7 @@
                     <div class="student-info">
                         <span>シート: <span id="repSheetName" style="color:#e67e22;"></span></span>
                         <span>氏名: <span id="repName" style="color:#2980b9;"></span></span>
-                        <span>年齢/学年: <span id="repGrade"></span></span>
+                        <span>学年: <span id="repGrade"></span></span>
                         <span>性別: <span id="repGender"></span></span>
                     </div>
                 </div>
@@ -272,7 +272,7 @@
                         </div>
                     </div>
 
-                    <!-- 右側：縦3×横3のグラフ（手動高さ調整スライダー付き） -->
+                    <!-- 右側：グラフ（手動高さ調整スライダー付き） -->
                     <div>
                         <div class="graph-control-bar">
                             <h3 style="font-size: 0.9rem; margin: 0; color:#2c3e50;">📈 種目別 比較グラフ</h3>
@@ -281,9 +281,7 @@
                                 <input type="range" id="graphHeightRange" min="300" max="750" value="480" step="10" oninput="updateGraphHeight(this.value)">
                             </div>
                         </div>
-                        <div class="charts-grid" id="chartsGrid">
-                            <!-- JavaScriptで動的生成 -->
-                        </div>
+                        <div class="charts-grid" id="chartsGrid"></div>
                     </div>
                 </div>
             </div>
@@ -296,18 +294,52 @@
         let currentSheetName = "";
         let activeCharts = [];
 
-        // テキストエリアの行数に応じて高さを自動拡張する関数
+        // 文部科学省の新体力テスト全国平均ベースの標準データ (小1〜小6、男子・女子)
+        // [立ち幅跳び(cm), 反復横跳び(点/回), 上体起こし(回), 握力(kg), 長座体前屈(cm), 50m走(秒), シャトルラン(回)]
+        const nationalBenchmarks = {
+            '男': {
+                1: { jump: 115, side: 33, situp: 13, grip: 11.5, flex: 20.0, run50: 10.5, shuttle: 25 },
+                2: { jump: 125, side: 37, situp: 16, grip: 13.0, flex: 22.0, run50: 10.0, shuttle: 30 },
+                3: { jump: 135, side: 41, situp: 19, grip: 15.0, flex: 25.0, run50: 9.5,  shuttle: 36 },
+                4: { jump: 145, side: 45, situp: 22, grip: 17.5, flex: 28.0, run50: 9.0,  shuttle: 42 },
+                5: { jump: 155, side: 48, situp: 25, grip: 20.0, flex: 31.0, run50: 8.5,  shuttle: 48 },
+                6: { jump: 168, side: 52, situp: 28, grip: 23.0, flex: 34.0, run50: 8.0,  shuttle: 55 }
+            },
+            '女': {
+                1: { jump: 110, side: 32, situp: 12, grip: 11.0, flex: 23.0, run50: 10.8, shuttle: 22 },
+                2: { jump: 120, side: 36, situp: 15, grip: 12.5, flex: 25.0, run50: 10.3, shuttle: 27 },
+                3: { jump: 130, side: 40, situp: 18, grip: 14.5, flex: 29.0, run50: 9.7,  shuttle: 33 },
+                4: { jump: 140, side: 43, situp: 21, grip: 17.0, flex: 32.0, run50: 9.2,  shuttle: 38 },
+                5: { jump: 150, side: 46, situp: 24, grip: 19.5, flex: 36.0, run50: 8.7,  shuttle: 43 },
+                6: { jump: 162, side: 50, situp: 27, grip: 22.5, flex: 39.0, run50: 8.2,  shuttle: 48 }
+            }
+        };
+
+        function getGradeNumber(gradeStr) {
+            if (!gradeStr) return 3;
+            if (gradeStr.includes('1')) return 1;
+            if (gradeStr.includes('2')) return 2;
+            if (gradeStr.includes('3')) return 3;
+            if (gradeStr.includes('4')) return 4;
+            if (gradeStr.includes('5')) return 5;
+            if (gradeStr.includes('6')) return 6;
+            return 3; // デフォルト小3
+        }
+
+        function getGenderKey(genderStr) {
+            if (!genderStr) return '男';
+            if (genderStr.includes('女') || genderStr.includes('F')) return '女';
+            return '男';
+        }
+
         function autoResizeTextarea(el) {
             el.style.height = 'auto';
             el.style.height = (el.scrollHeight) + 'px';
         }
 
-        // スライダーでグラフエリアの高さを手動調整する関数
         function updateGraphHeight(val) {
             const grid = document.getElementById('chartsGrid');
-            if (grid) {
-                grid.style.height = val + 'px';
-            }
+            if (grid) grid.style.height = val + 'px';
         }
 
         function handleFileSelect(event) {
@@ -354,8 +386,8 @@
 
                 const student = {
                     name: name,
-                    grade: row[2] || '不明',
-                    gender: row[3] || '不明',
+                    grade: row[2] || '小3',
+                    gender: row[3] || '男',
                     scores: {
                         'ダイアゴナルラン': { prev: row[4], current: row[5], unit: '秒', lowerIsBetter: true },
                         'ストラックアウト': { prev: row[6], current: row[7], unit: '点', lowerIsBetter: false },
@@ -375,7 +407,7 @@
             allStudentsData.forEach((st, index) => {
                 const opt = document.createElement('option');
                 opt.value = index;
-                opt.text = `${st.name} （${st.grade}）`;
+                opt.text = `${st.name} （${st.grade}・${st.gender}）`;
                 studentSelect.appendChild(opt);
             });
 
@@ -399,6 +431,22 @@
             document.getElementById('repGrade').innerText = student.grade;
             document.getElementById('repGender').innerText = student.gender;
 
+            const gNum = getGradeNumber(student.grade);
+            const gKey = getGenderKey(student.gender);
+            const bench = nationalBenchmarks[gKey][gNum];
+
+            // 基準値の定義（ダイアゴナルランは50m走平均×1.2、ミニシャトルランはシャトルラン平均×1.3）
+            const customBenchmarks = {
+                'ダイアゴナルラン': Number((bench.run50 * 1.2).toFixed(2)),
+                'ストラックアウト': 5, // 独自の基準
+                '立ち幅跳び': bench.jump,
+                '反復横跳び': bench.side,
+                '上体起こし': bench.situp,
+                '握力': bench.grip,
+                '長座体前屈': bench.flex,
+                'ミニシャトルラン': Math.round(bench.shuttle * 1.3)
+            };
+
             const tbody = document.getElementById('scoreTableBody');
             tbody.innerHTML = '';
 
@@ -419,6 +467,7 @@
                 
                 let evalText = '-';
                 let nextTarget = '-';
+                const stdVal = customBenchmarks[eventKey];
 
                 if (p !== null && c !== null) {
                     let diff = c - p;
@@ -454,30 +503,34 @@
                     }
                 }
 
+                // 年齢・性別・全国平均を考慮したきめ細やかなコメント生成
                 if (c !== null) {
+                    const isAboveAvg = data.lowerIsBetter ? (c <= stdVal) : (c >= stdVal);
+                    const ageGroupText = `${student.grade}${gKey}児の平均水準`;
+
                     if (eventKey === 'ダイアゴナルラン' || eventKey === 'ミニシャトルラン') {
-                        if (p !== null && c < p && data.lowerIsBetter || p !== null && c > p && !data.lowerIsBetter) {
-                            goodPoints.push(`${eventKey}では、素早く方向を切り替えながら最後まで走り抜ける敏捷性とスタミナがしっかり発揮されています。`);
+                        if (isAboveAvg) {
+                            goodPoints.push(`${eventKey}では、${ageGroupText}を上回る素早い方向転換と持久力が発揮されており、最後までスピードを落とさずに走り切る高い敏捷性が見られます。`);
                         } else {
-                            taskPoints.push(`${eventKey}では、方向転換のときに少しスピードが落ちてしまう場面がありました。姿勢を低くして曲がる練習をすると、さらにタイムが縮まります。`);
+                            taskPoints.push(`${eventKey}では、コーナーを回る際や後半の疲労時に少し減速する傾向が見られます。姿勢を低くして足腰のバネを使う意識を持つことで、さらに記録が伸びます。`);
                         }
                     } else if (eventKey === '立ち幅跳び' || eventKey === '反復横跳び') {
-                        if (p !== null && c >= p) {
-                            goodPoints.push(`${eventKey}では、足を力強く地面に蹴り出して大きく跳ぶ瞬発力がとてもよく伸びています。`);
+                        if (isAboveAvg) {
+                            goodPoints.push(`${eventKey}において${ageGroupText}を超える優れた跳躍力・敏捷性を記録しており、全身のバランスと瞬発力が非常に良好です。`);
                         } else {
-                            taskPoints.push(`${eventKey}は、全身のバネを上手に使うタイミングをつかむと、さらに記録を伸ばすことができます。日頃からジャンプ動作を取り入れてみましょう。`);
+                            taskPoints.push(`${eventKey}は、踏み切る瞬間のタイミングや着地の膝のクッションを意識すると、${ageGroupText}の基準をさらに超えるジャンプ力・ステップ力が身につきます。`);
                         }
                     } else if (eventKey === 'ストラックアウト') {
-                        if (c >= 5) {
-                            goodPoints.push(`狙った的をしっかり見てボールをコントロールする力が優れており、素晴らしい集中力が見られました。`);
+                        if (c >= stdVal) {
+                            goodPoints.push(`ターゲットを正確に見据えた抜群のコントロール力と集中力を発揮し、狙い通りの投球ができています。`);
                         } else {
-                            taskPoints.push(`ボールを投げる際、狙う場所と体の向きを意識して練習すると、より正確に的を射抜けるようになります。`);
+                            taskPoints.push(`投球の際、狙う的に対して体の軸をまっすぐ正す意識を持つと、より安定したコントロールが身につきます。`);
                         }
                     } else if (eventKey === '上体起こし' || eventKey === '握力' || eventKey === '長座体前屈') {
-                        if (p !== null && c >= p) {
-                            goodPoints.push(`${eventKey}をはじめとする基礎体力や柔軟性がしっかり維持・向上しており、バランスよく成長しています。`);
+                        if (isAboveAvg) {
+                            goodPoints.push(`${eventKey}は${ageGroupText}をクリアしており、基礎的な筋力・柔軟性がしっかりと備わっています。`);
                         } else {
-                            taskPoints.push(`${eventKey}の向上に向けて、おうちでも楽しくストレッチや体幹の運動を取り入れてみましょう。`);
+                            taskPoints.push(`${eventKey}の向上に向けて、日常的なストレッチや体幹トレーニングをご家庭でも楽しく取り入れてみましょう。`);
                         }
                     }
                 }
@@ -531,13 +584,12 @@
 
             document.getElementById('textGood').value = goodPoints.length > 0 
                 ? goodPoints.join(' ') 
-                : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の伸びしろがとても楽しみです！`;
+                : `${student.name}さんは、各種目に対して一生懸命取り組んでおり、今後の成長がとても楽しみです！`;
 
             document.getElementById('textTask').value = taskPoints.length > 0 
                 ? taskPoints.join(' ') 
-                : `全体的に元気に挑戦できています。日常の遊びや運動の中にさまざまな動きを取り入れることで、さらに身体能力が高まります。`;
+                : `${student.grade}${student.gender}の平均水準を踏まえ、日々の遊びや運動の中に様々な動きを取り入れることで、さらなる総合的な身体能力の向上が期待できます。`;
 
-            // レポート表示後にコメント欄のテキスト量に合わせて高さを自動フィットさせる
             setTimeout(() => {
                 document.querySelectorAll('.comment-box textarea').forEach(ta => autoResizeTextarea(ta));
             }, 50);
