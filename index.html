@@ -315,16 +315,21 @@
             }
         };
 
-        function getGradeNumber(gradeStr) {
-            if (!gradeStr) return 3;
-            if (gradeStr.includes('1')) return 1;
-            if (gradeStr.includes('2')) return 2;
-            if (gradeStr.includes('3')) return 3;
-            if (gradeStr.includes('4')) return 4;
-            if (gradeStr.includes('5')) return 5;
-            if (gradeStr.includes('6')) return 6;
-            return 3; // デフォルト小3
-        }
+function getGradeNumber(gradeStr) {
+    // 修正：必ず文字列に変換してから .includes を実行する
+    const str = String(gradeStr || ''); 
+
+    if (str.includes('小1')) return 1;
+    if (str.includes('小2')) return 2;
+    if (str.includes('小3')) return 3;
+    if (str.includes('小4')) return 4;
+    if (str.includes('小5')) return 5;
+    if (str.includes('小6')) return 6;
+    if (str.includes('中1')) return 7;
+    if (str.includes('中2')) return 8;
+    if (str.includes('中3')) return 9;
+    return 3; // デフォルト値
+}
 
         function getGenderKey(genderStr) {
             if (!genderStr) return '男';
